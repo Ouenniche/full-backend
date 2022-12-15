@@ -1,53 +1,75 @@
 const User = require("../models/User");
 const bcrypt = require('bcrypt')
+const jwt=require('jsonwebtoken')
+
+const maxAge = 3 * 24 * 60 * 60 * 1000;
+
+const createToken = (id) => {
+    return jwt.sign({id}, process.env.PRIVATE_TOKEN, {
+      expiresIn: maxAge
+    })
+  };
 
 
-//signein
+//signup
+
 exports.register=async(req,res)=>{
-    const {firstName,lastName,email,password} = req.body
-        try {
-            const salt = await bcrypt.genSalt();
-            const passwordHash = await bcrypt.hash(password, salt);
-        
-            const newUser = new User({
-              firstName,
-              lastName,
-              email,
-              password: passwordHash,
-            //   friends,
-            //   location,
-            //   occupation,
-            //   viewedProfile: Math.floor(Math.random() * 10000),
-            //   impressions: Math.floor(Math.random() * 10000),
-            })
-            await newUser.save();
-            res.status(200).json({msg:'user created succefully'});
-          } catch (err) {
-            res.status(501).json('it dosent work');
-          }
+  const {firstName,lastName,email,password} = req.body
+  try {
+      // check user
+      const checkuser=await User.findOne({email})
+      if(checkuser){
+          return res.status(401).json({errors:[{msg:"utilisateur existe déja"}]})
+      }
+      const user= new User({
+        firstName,lastName,email,password
+      })
+      user.password=await bcrypt.hash(password,10)
+      await user.save()
+
+      //generate Token
+
+      const token = createToken(user._id);
+      res.cookie('jwt', token, { httpOnly: true,maxAge });
+   
+
+
+      res.status(200).json({user,msg:"utilisateur crée"})
+  } catch (error) {
+      res.status(500).send('server error')
+  }
 }
 
 //login
+
+
 exports.login=async(req,res)=>{
-  
+  const {email,password}=req.body
   try {
-    const { email, password } = req.body
-    const checkuser=await User.findOne({email})
-    if (!checkuser){
-        return res.status(401).json({errors:[{msg:"not valide Email"}]})
-    }
-    const isMatch= await bcrypt.compare(password, checkuser.password)
-    if (!isMatch){
-        return res.status(400).json({errors:[{msg:"not valide Password"}]})
-    }
-    const payload={
-        id:checkuser._id
-    }
-    const token=jwt.sign(payload,process.env.secret_key,{expiresIn:'3d'})
+      const user=await User.findOne({email})
+      if(!user){
+          return res.status(400).json({errors:[{msg:"bad credentials"}]})
+      }
+      const isMatch=await bcrypt.compare(password,user.password)
+      if(!isMatch){
+          return res.status(400).json({errors:[{msg:"bad credentials"}]})
+      }
 
-    res.status(200).json({checkuser,msg:"you are connected successfully",token})
+   // generate token
+   const token = createToken(user._id);
+   res.cookie('jwt', token, { httpOnly: true,maxAge });
 
-} catch (error) {
-    res.status(500).send('server error')
+      res.status(200).json({user,msg:"login with success"})
+  } catch (error) {
+      res.status(500).send('server error')
+  }
+
+  
 }
+
+//Logout
+
+exports.logout = (req, res) => {
+  res.cookie('jwt', '', { maxAge: 1 });
+  res.redirect('/');
 }

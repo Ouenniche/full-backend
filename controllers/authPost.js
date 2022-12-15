@@ -1,6 +1,6 @@
 const Post =require ("../models/Post")
 const User =require ("../models/User")
-const ObjectID = require("mongoose").Types.ObjectId;
+const ObjectId = require("mongoose").Types.ObjectId;
 
 /* CREATE */
 module.exports.createPoste = async (req, res) => {

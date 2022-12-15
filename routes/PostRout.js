@@ -3,7 +3,7 @@ const router=express.Router()
 const { readPost, getUserPosts, likePost } = require("../controllers/authPost")
 const { verifyToken } = require('../middelware/auth')
 
-//   verifyToken,
+// verifyToken,
 router.get("/",  readPost)
 
 router.get("/:userId/posts",  getUserPosts)

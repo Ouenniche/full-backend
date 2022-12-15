@@ -3,7 +3,7 @@ const mongoose=require('mongoose')
 const connectDB=async()=>{
     try {
         await mongoose.connect(process.env.DATA_URL)
-        console.log(`Omar is connected successfully`)
+        console.log(`DataBase is connected successfully`)
     } catch (error) {
         console.log(`database did not connect`)
     }
